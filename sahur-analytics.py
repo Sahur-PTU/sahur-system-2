@@ -15,9 +15,10 @@ from pythonping import ping
 
 
 init()
-#os.system('mode con: cols=45 lines=6')
+# os.system('mode con: cols=45 lines=6')
 
 print(Fore.WHITE,'sahur-system-[2] / v-1.0 / 19.07.2026',Style.RESET_ALL) 
+
 
 time_now = "none"
 ping_now = "none"
