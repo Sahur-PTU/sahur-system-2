@@ -2,5 +2,5 @@
 
 **[1.2] - Пофикщено, допилена ASCII-версия, значения правильно форматируются**
 
-<img width="635" height="184" alt="изображение" src="https://github.com/user-attachments/assets/1aece758-04e6-4335-a8f9-fb7450177a14" />
+
 
