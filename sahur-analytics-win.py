@@ -1,18 +1,19 @@
 # sahur-system-[2] / v-1.0 / 19.07.2026 - analytics 
 
 import os
-import sys
-import subprocess
-import json
-import webbrowser
+from sys import platform
+#import subprocess
+#import json
+#import webbrowser
 import shutil
 import socket
 import requests
 import time
 import datetime
 import tkinter
-import threading
+#import threading
 from pythonping import ping
+
 
 time_now = "none"
 ping_now = "none"
@@ -20,6 +21,7 @@ public_ip = "none"
 local_ip = "none"
 datetime_now = "none"
 valutes = {'eur':'none', 'usd':'none', 'cny':'none'}
+disk_name = "/"
 disk_data = {'vsego':'none','zanyato':'none','svobodno':'none'}
 
 
@@ -37,8 +39,8 @@ def ip_addresses():
     if len(public_ip) <= 13: public_ip = public_ip+"  "
 
 def disk_info():
-    path = '/'
-    usage = shutil.disk_usage(path) # получаем информацию о диске
+    global disk_name
+    usage = shutil.disk_usage(disk_name) # получаем информацию о диске
     gb = 2 ** 30 # байты в гигабайты
     disk_data['vsego'] = f"Всего: {usage.total / gb:.2f} GB"
     disk_data['zanyato'] = f"Занято: {usage.used / gb:.2f} GB"
@@ -50,9 +52,9 @@ def currency_rate():
     if response.status_code == 200:
             data = response.json()
         # Поиск курса валюты по её коду (например, USD или EUR)
-            valutes['eur'] = data['Valute']["EUR"]['Value']
-            valutes['usd'] = data['Valute']["USD"]['Value']
-            valutes['cny'] = data['Valute']["CNY"]['Value']
+            valutes['eur'] = str(data['Valute']["EUR"]['Value'])[:6]
+            valutes['usd'] = str(data['Valute']["USD"]['Value'])[:6]
+            valutes['cny'] = str(data['Valute']["CNY"]['Value'])[:6]
             return "yea"
     else: return "Ошибка подключения к серверу"
 
@@ -61,11 +63,11 @@ def time_info():
     time_now = str(datetime.datetime.now())[:-7]
 
 def ping_info():
-    response = ping("8.8.8.8", count=4) # ICMP-запросы
-    r = str(response.rtt_avg_ms)
-    if len(r) < 5: r = r + "0"
-    if len(r) > 5: r = r[:-1]
-    global ping_now; ping_now = r
+    pingRequest = ping("8.8.8.8", count=4) # ICMP-запросы
+    response = str(pingRequest.rtt_avg_ms)
+    if len(response) < 5: response = response + "0"
+    if len(response) > 5: response = response[:-1]
+    global ping_now; ping_now = response
 
 # функция мониторинга интернет соеденения 
 # мониторинг задержки
@@ -88,11 +90,12 @@ def update_data_on_time():
       if loop % 2: 
           get_ping = ping_info()
       if loop == 10: 
-        get_disk = disk_info()
+          get_disk = disk_info()
       if loop >= 30: 
           loop = 0
           valutes_s = currency_rate()
   except IndexError: print('indexError')
+  except KeyboardInterrupt: return 0
   #except: pass   
 
 
@@ -115,7 +118,7 @@ def window():
     try:
       with open('data/output.txt', 'r') as file:
         r = tkinter.Label(root, text=file.read())
-        r.place(x=180,y=120)
+        r.place(x=10,y=120)
     except FileNotFoundError: print("файл не найден")
 
   root = tkinter.Tk() # создание окна
@@ -128,10 +131,10 @@ def window():
   root.after(800, update_data) # обновление данных
 
   time_output = tkinter.Label(root, width=18, height=1, font=("Arial", 9))
-  time_output.place(x=210,y=10)
+  time_output.place(x=210, y=10)
 
   ping_output = tkinter.Label(root, text=f"ping : {ping_now}")    
-  ping_output.place(x=250,y=95)
+  ping_output.place(x=250, y=95)
   
 
   label_local_ip = tkinter.Label(root, text="L IP: "+local_ip)
@@ -169,18 +172,37 @@ def window():
   root.mainloop()
 
 
+
+def settings(): # потом доделаю
+  print("""
+enter : «disk <name>» to change disk
+        «none»""")
+  set_data = input('>> ') 
+   
+  if set_data.startswith('disk '):
+    if set_data[-1:] in ('C','c','D','d','E','e','F','f'):
+        global disk_name
+        disk_name = set_data[-1:]+':/'
+        print('disk',disk_name)
+        print('saved')
+   
+
+
 def main() :
   #while True:
-    time.sleep(1)
+    time.sleep(0.5)
     try: 
         setup_data()
+
+        #settings()
+        
+        #t1 = threading.Thread(target=loop_update_data) # пока пусть будет
+        #t1.start()
+
         _window = window()
-    #t1 = threading.Thread(target=loop_update_data)
-    #t2 = threading.Thread(target=loop_window)
-    #t1.start()
-    #t2.start()
-    #t1.join()
-    #t2.join()
+
+        #t1.join()
+
     except KeyboardInterrupt: return "exit"
 
 _main = main()
