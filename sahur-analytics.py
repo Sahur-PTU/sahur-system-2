@@ -1,22 +1,26 @@
-# sahur-system-[2] / v-1.0 / 19.07.2026 - analytics 
+# sahur-system-[2] / v-1.2 / 20.11.2026 - analytics / anatoly and caktuz
 
-import os
-import sys
+from os import system as os_system, path as os_path
+from sys import platform as sys_platform
 import subprocess
-import json
-import webbrowser
-import shutil
+#import json
+#import webbrowser
+from shutil import disk_usage as shutil_disk_usage
 import socket
 import requests
 import time
 import datetime
-from colorama import init, Fore, Back, Style
+import string
+from colorama import init as colorama_init, Fore, Back, Style
 from pythonping import ping
 
-version = "v 1.2 / 15.10.2026"
+version = "v 1.2 / 20.11.2026"
+colorama_init()
+#os_system('mode con: cols=45 lines=6')
 
-init()
-#os.system('mode con: cols=45 lines=6')
+if sys_platform == "win32": clearOutput = 'cls'
+else: clearOutput = 'clear'
+
 
 time_now = "none"
 ping_now = "none"
@@ -25,6 +29,8 @@ local_ip = "none"
 datetime_now = "none"
 valutes = {'eur':'none', 'usd':'none', 'cny':'none'}
 disk_data = {'vsego':'none','zanyato':'none','svobodno':'none'}
+disk_name = "/"
+disks_list = []
 
 
 def ip_addresses():
@@ -43,11 +49,17 @@ def ip_addresses():
 
 def disk_info():
     path = '/'
-    usage = shutil.disk_usage(path) 
+    usage = shutil_disk_usage(path) 
     gb = 2 ** 30 # байты в гигабайты
-    disk_data['vsego'] = f"Всего: {usage.total / gb:.2f} GB"
-    disk_data['zanyato'] = f"Занято: {usage.used / gb:.2f} GB"
-    disk_data['svobodno'] = f"Свободно: {usage.free / gb:.2f} GB"
+    disk_data['vsego'] = f"{usage.total / gb:.2f}"
+    disk_data['zanyato'] = f"{usage.used / gb:.2f}"
+    disk_data['svobodno'] = f"{usage.free / gb:.2f}"
+
+    global disks_list, disk_name
+    disks_list = [f"{letter}:\\" for letter in string.ascii_uppercase if os_path.exists(f"{letter}:\\")]
+
+    disk_name = subprocess.check_output("cmd /c echo %CD:~0,2%", text=True).strip()
+
 
 def currency_rate():
     url = 'https://www.cbr-xml-daily.ru/daily_json.js'
@@ -66,8 +78,8 @@ def time_info():
     time_now = str(datetime.datetime.now())[:-7]
 
 def ping_info():
-    response = ping("8.8.8.8", count=1) # ICMP-запросы
-    response = str(response.rtt_avg_ms)
+    pingRequest = ping("8.8.8.8", count=1) # ICMP-запросы
+    response = str(pingRequest.rtt_avg_ms)
     if len(response) < 5: response = response + "0"
     if len(response) > 5: response = response[:-1]
     global ping_now; ping_now = response
@@ -78,20 +90,19 @@ def ping_info():
 # мониторинг связи узлов
 # мониторинг места на диске
 
-print(Fore.WHITE, '   sahur-system-[2] / '+ version, Fore.RESET) 
 
-def vew_data():
+
+def vew_table():
     # Код \033[K очищает строку от курсора до конца (чтобы не оставалось хвостов)
-    LINE_01   = f"   _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _  \033[K"
-    LINE_02   = f"  / \033[36m{time_now              }\033[0m / EUR {valutes['eur']} / {disk_data['vsego']}   / \033[K"
-    LINE_03   = f" / \033[32mЗадержка: {ping_now} ms\033[0m  / USD {valutes['usd']} / {disk_data['zanyato']}  / \033[K"
-    LINE_04   = f"/ \033[33m{disk_data['svobodno']}\033[0m  / CNY {valutes['cny']} / {disk_data['svobodno']} / \033[K"
+    LINE_01   = f"   _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \033[K"
+    LINE_02   = f"  /\033[36m {time_now              } \033[0m/ EUR {valutes['eur']} / Дисков: {len(disks_list)} шт. Текущий: {disk_name} // \033[K"
+    LINE_03   = f" /\033[32m Задержка: {ping_now} ms  \033[0m/ USD {valutes['usd']} / Всего: {disk_data['vsego']} GB          // \033[K"
+    LINE_04   = f"/\033[33m IP:  {public_ip        }\033[0m/ CNY {valutes['cny']} / Свободно: {disk_data['svobodno']} GB        // \033[K"
     # Выводим рамку
     print(LINE_01)
     print(LINE_02)
     print(LINE_03)
     print(LINE_04, end="", flush=True)
-    # Магия: возвращаем курсор на 3 строки вверх, чтобы перезаписать рамку
     # \033[3F поднимает курсор в начало строки на 3 уровня выше
     # \r сдвигает курсор в самый левый край текущей (нижней) строки
     print("\r\033[3F", end="", flush=True)
@@ -104,7 +115,7 @@ def setup_data():
   get_disk = disk_info()
 
 loop = 0
-def update_data_on_time():
+def update_data_on_time(): 
   global loop
   loop += 1
   try:
@@ -118,20 +129,24 @@ def update_data_on_time():
           valutes_s = currency_rate()
   except IndexError: print('indexError')
   except KeyboardInterrupt: return "exit"
-  #except: pass   
+  
 
 def main(): 
-  setup_data()
-  while True:
-    time.sleep(1)
-    update_data_on_time()
-    vew_data()
+  try:
+    os_system(clearOutput)
+    setup_data()
+    print(Fore.WHITE, '   — — sahur-system-[2] / '+ version + ' — — — — — — — — — — —', Fore.RESET) 
+    while True:
+      update_data_on_time()
+      vew_table()
+      time.sleep(1)
+  except KeyboardInterrupt: return 0
 
 if __name__ == "__main__":
    main()
 
 
-def menu():
+def menu(): # древние наскальные рисунки
     while True:
       #os.system('cls'), time.sleep(1)
       print('\n'+local_ip)
@@ -143,6 +158,4 @@ def menu():
           response = ping(host, count=4) # ICMP-запросы
           print(f"{datetime_now} / {response.rtt_avg_ms} мс",end="\r",flush=True),time.sleep(1)
         except KeyboardInterrupt: exit()
-
-
-print('exit')
+      print('exit')
