@@ -3,8 +3,6 @@
 from os import system as os_system, path as os_path
 from sys import platform as sys_platform
 from subprocess import check_output as subprocess_check_output
-#import json
-#import webbrowser
 from shutil import disk_usage as shutil_disk_usage
 import socket
 import requests
