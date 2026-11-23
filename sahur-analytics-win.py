@@ -3,8 +3,6 @@
 from os import system as os_system, path as os_path
 from sys import platform as sys_platform
 from subprocess import check_output as subprocess_check_output
-#import json
-#import webbrowser
 from shutil import disk_usage as shutil_disk_usage
 import socket
 import requests
@@ -22,8 +20,9 @@ public_ip = "none"
 local_ip = "none"
 datetime_now = "none"
 valutes = {'eur':'none', 'usd':'none', 'cny':'none'}
-disk_name = "/"
 disk_data = {'vsego':'none','zanyato':'none','svobodno':'none'}
+disk_name = "/"
+disks_list = []
 
 
 def ip_addresses():
@@ -39,6 +38,7 @@ def ip_addresses():
         local_ip = local_ip + (" " * (15 - len(local_ip)))
     if len(public_ip) < 15: 
         public_ip = public_ip + (" " * (15 - len(public_ip)))
+    public_ip = '173.92.217.22  '
 
 def weather_info():
   try:
@@ -60,9 +60,11 @@ def weather_info():
     data = response.json()
 
     current = data["current_condition"][0]
-    weather = f"{current['temp_C'][:2]}°C   {current['humidity'][:2]}%   {current['windspeedKmph'][:2]}км/ч"
+    weather = f"{current['temp_C'][:2]}°C  {current['humidity'][:2]}%  {current['windspeedKmph'][:2]}км/ч"
 
-  except requests.RequestException as e: weather = f"[weather] request error : {e}"
+  except requests.RequestException as e: 
+     weather = "request error"; 
+     print(f"[weather] request error : {e} \n")
 
 
 def disk_info():
@@ -127,7 +129,11 @@ def time_info():
 def ping_info():
     pingRequest = ping("8.8.8.8", count=1) # ICMP-запросы
     response = str(pingRequest.rtt_avg_ms)
-    if len(response) < 5: response = response + ("0"*(5 - len(response)))
+
+    if len(response) < 5: 
+       if len(response) < 2:
+          response = '0'+ response + '.'+("0"*(5 - len(response)))
+       else: response = response + '.'+("0"*(5 - len(response)))
     if len(response) > 5: response = response[:(5 - len(response))]
     global ping_now; ping_now = response
 
@@ -169,8 +175,8 @@ def window():
   def update_data():
     update_data_on_time() # обновляем данные
     # обновляем текст в метках
-    time_output.config(text=time_now)
-    ping_output.config(text=f"ping : {ping_now}")
+    label_TIME.config(text=time_now)
+    label_PING.config(text=f"ping : {ping_now}")
 
     # Планируем следующий вызов этой же функции через 800 мс
     root.after(800, update_data)
@@ -195,26 +201,26 @@ def window():
 
   root.after(800, update_data) # обновление данных
 
-  time_output = tkinter.Label(root, width=18, height=1, font=("Arial", 9))
-  time_output.place(x=210, y=10)
+  label_TIME = tkinter.Label(root, text=time_now,width=18, height=1, font=("Arial", 9)) # -------------- Время
+  label_TIME.place(x=210, y=10)
 
-  ping_output = tkinter.Label(root, text=f"ping : {ping_now}")    
-  ping_output.place(x=250, y=95)
+  label_PING = tkinter.Label(root, text=f"ping : {ping_now}") # ---------------------------------------- Пинг
+  label_PING.place(x=250, y=95)
+
   
+  label_LOCAL_IP = tkinter.Label(root, text="L IP: "+local_ip) # --------------------------------------- Айпишки
+  label_LOCAL_IP.place(x=232, y=40)
+  label_PUBLIC_IP = tkinter.Label(root, text="P IP: "+public_ip)
+  label_PUBLIC_IP.place(x=232, y=65)
 
-  label_local_ip = tkinter.Label(root, text="L IP: "+local_ip)
-  label_local_ip.place(x=232, y=40)
-  label_public_ip = tkinter.Label(root, text="P IP: "+public_ip)
-  label_public_ip.place(x=232, y=65)
+  label_EUR = tkinter.Label(root,text=f"EUR : {valutes['eur']}", width=12, height=1,font=("Arial", 9)) # Валюты
+  label_EUR.place(x=250, y=125)
+  label_USD = tkinter.Label(root,text=f"USD : {valutes['usd']}", width=12, height=1,font=("Arial", 9))
+  label_USD.place(x=250, y=148)
+  label_CNY = tkinter.Label(root,text=f"CNY : {valutes['cny']}", width=12, height=1,font=("Arial", 9))
+  label_CNY.place(x=250, y=171)
 
-  eur_label = tkinter.Label(root,text=f"EUR : {valutes['eur']}", width=12, height=1,font=("Arial", 9))    
-  eur_label.place(x=250, y=125)
-  usd_label = tkinter.Label(root,text=f"USD : {valutes['usd']}", width=12, height=1,font=("Arial", 9))
-  usd_label.place(x=250, y=148)
-  cny_label = tkinter.Label(root,text=f"CNY : {valutes['cny']}", width=12, height=1,font=("Arial", 9))
-  cny_label.place(x=250, y=171)
-
-  name_disk_tab = tkinter.Label(root, text=" Диск ")
+  name_disk_tab = tkinter.Label(root, text=" Диск: "+disk_name) # ------------------------------------------------- Диски
   name_disk_tab.place(x=125, y=100)
   vse = tkinter.Label(root, text=f"Всего: {disk_data['vsego']}")
   vse.place(x=125, y=125)
@@ -223,7 +229,7 @@ def window():
   svo = tkinter.Label(root, text=f"Свободно: {disk_data['svobodno']}")
   svo.place(x=125, y=171)
 
-  label_weather = tkinter.Label(root, text="Погода")
+  label_weather = tkinter.Label(root, text="Погода") # ------------------------------------------------- Погода
   label_weather.place(x=125, y=40)
   label_weather = tkinter.Label(root, text=weather)
   label_weather.place(x=125, y=65)
