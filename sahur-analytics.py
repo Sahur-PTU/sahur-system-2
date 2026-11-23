@@ -88,7 +88,7 @@ def weather_info():
 
   except requests.RequestException as e:
      weather = "request error     "; 
-     print(f"[weather] request error : {e} \n")
+     #print(f"[weather] request error : {e} \n")
   except: weather  = "something error   "
 
   weather = weather[:18]
@@ -155,12 +155,14 @@ def ping_info():
   try:
     pingRequest = ping("8.8.8.8", count=1) # ICMP-запросы
     response = str(pingRequest.rtt_avg_ms)
-
+ 
     if len(response) < 5: # форматирование 
-        if len(response) < 2:
-            response = '0'+ response + '.'+("0"*(5 - len(response)))
-        else: response = response + '.'+("0"*(5 - len(response)))
-    if len(response) > 5: response = response[:(5 - len(response))]
+      if len(response) < 2: 
+          response = '0'+ response
+      if '.' not in response:
+          response = response + '.' + ("0" * (5 - len(response)))
+      else: response = response + ("0" * (5 - len(response)))
+
     global ping_now; ping_now = response[:5]
   except: ping_now = 'ERROR'
 
