@@ -128,9 +128,9 @@ def currency_rate():
     if response.status_code == 200:
             data = response.json()
         # Поиск курса валюты по её коду (например, USD или EUR)
-            valutes['eur'] = str(data['Valute']["EUR"]['Value'])[0:5]
-            valutes['usd'] = str(data['Valute']["USD"]['Value'])[0:5]
-            valutes['cny'] = str(data['Valute']["CNY"]['Value'])[0:5]
+            valutes['eur'] = str(data['Valute']["EUR"]['Value'])[0:6]
+            valutes['usd'] = str(data['Valute']["USD"]['Value'])[0:6]
+            valutes['cny'] = str(data['Valute']["CNY"]['Value'])[0:6]
             return True
     else: 
        for valute in valutes: valutes[valute] = 'error'
@@ -150,10 +150,12 @@ def ping_info():
     response = str(pingRequest.rtt_avg_ms)
 
     if len(response) < 5: # форматирование 
-        if len(response) < 2:
-            response = '0'+ response + '.'+("0"*(5 - len(response)))
-        else: response = response + '.'+("0"*(5 - len(response)))
-    if len(response) > 5: response = response[:(5 - len(response))]
+        if len(response) < 2: 
+            response = '0'+ response
+        if '.' not in response:
+            response = response + '.' + ("0" * (5 - len(response)))
+        else: response = response + ("0" * (5 - len(response)))
+      
     global ping_now; ping_now = response[:5]
   except: ping_now = 'ERROR'
 
@@ -196,7 +198,7 @@ def window():
     update_data_on_time() # обновляем данные
     # обновляем текст в метках
     label_TIME.config(text=time_now)
-    label_PING.config(text=f"ping : {ping_now}")
+    label_PING.config(text=f"ping : {ping_now} ms ")
 
     # Планируем следующий вызов этой же функции через 800 мс
     root.after(800, update_data)
@@ -219,12 +221,12 @@ def window():
   root.wm_attributes('-alpha', 0.9)
   root.configure(bg="#584e4e") # или root['bg'] = 'blue'
 
-  root.after(800, update_data) # обновление данных
+  root.after(1000, update_data) # обновление данных
 
   label_TIME = tkinter.Label(root, text=time_now,width=18, height=1, font=("Arial", 9)) # -------------- Время
   label_TIME.place(x=210, y=10)
 
-  label_PING = tkinter.Label(root, text=f"ping : {ping_now}") # ---------------------------------------- Пинг
+  label_PING = tkinter.Label(root, text=f"ping : {ping_now} ms ") # ------------------------------------ Пинг
   label_PING.place(x=250, y=95)
 
   
@@ -240,19 +242,17 @@ def window():
   label_CNY = tkinter.Label(root,text=f"CNY : {valutes['cny']}", width=12, height=1,font=("Arial", 9))
   label_CNY.place(x=250, y=171)
 
-  name_disk_tab = tkinter.Label(root, text=" Диск: "+disk_name) # ------------------------------------------------- Диски
-  name_disk_tab.place(x=125, y=100)
-  vse = tkinter.Label(root, text=f"Всего: {disk_data['vsego']}")
-  vse.place(x=125, y=125)
-  zan = tkinter.Label(root, text=f"Занято: {disk_data['zanyato']}")
-  zan.place(x=125, y=148)
-  svo = tkinter.Label(root, text=f"Свободно: {disk_data['svobodno']}")
-  svo.place(x=125, y=171)
+  count_disk_tab = tkinter.Label(root, text=f" Дисков: {disks_count} шт") # ----------------------------- Диски
+  count_disk_tab.place(x=75, y=95)
+  vse = tkinter.Label(root, text=f"Текущий: {disk_name} ")
+  vse.place(x=160, y=95)
+  svo = tkinter.Label(root, text=f"Свободно: {disk_data['svobodno']} из {disk_data['vsego']} GB")
+  svo.place(x=75, y=120)
 
   label_weather = tkinter.Label(root, text="Погода") # ------------------------------------------------- Погода
-  label_weather.place(x=125, y=40)
+  label_weather.place(x=120, y=40)
   label_weather = tkinter.Label(root, text=weather)
-  label_weather.place(x=125, y=65)
+  label_weather.place(x=120, y=65)
 
 
   btn_1 = tkinter.Button(root, text='Чтение', command=read)
