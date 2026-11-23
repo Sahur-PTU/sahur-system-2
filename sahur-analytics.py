@@ -4,6 +4,8 @@ from os import system as os_system, path as os_path
 from sys import platform as sys_platform
 from subprocess import check_output as subprocess_check_output
 from shutil import disk_usage as shutil_disk_usage
+from pathlib import Path
+import psutil
 import socket
 import requests
 import time
@@ -30,9 +32,11 @@ weather = "none"
 disk_data = {'vsego':'none','zanyato':'none','svobodno':'none'}
 disk_name = "/"
 disks_list = []
+disks_count = 0
 
 
 def ip_addresses():
+  try:
     global public_ip, local_ip
     try: # белый айпи
       public_ip = requests.get('https://ifconfig.me', timeout=5).text.strip()
@@ -41,15 +45,23 @@ def ip_addresses():
       hostname = socket.gethostname()
       local_ip = socket.gethostbyname(hostname)
     except: local_ip = 'Ошибка при получении локального IP'
-    if len(local_ip) < 15: 
-      local_ip = local_ip + (" " * (15 - len(local_ip)))
+
+    public_ip = '173.92.217.22'
+    if len(local_ip) < 15: # форматирование 
+        local_ip = local_ip + (" " * (15 - len(local_ip)))
     if len(public_ip) < 15: 
-          public_ip = public_ip + (" " * (15 - len(public_ip)))
+        public_ip = public_ip + (" " * (15 - len(public_ip)))
+    local_ip = local_ip[:15]
+    public_ip = public_ip[:15]
+
+  except: 
+    public_ip = 'RROR ERROR ERRO'
+    return False
+  
 
 def weather_info():
   try:
     global weather
-
     params = {
        "latitude": 55.7558,
        "longitude": 37.6173,
@@ -66,34 +78,58 @@ def weather_info():
     data = response.json()
 
     current = data["current_condition"][0]
-    weather = f"{current['temp_C'][:2]}°C  {current['humidity'][:2]}%  {current['windspeedKmph'][:2]}км/ч"
+    weather = f"{current['temp_C'][:2]}°C  {current['humidity'][:2]}%  {str(int(current['windspeedKmph'])/3.6)[:3]}м/c"
 
-  except requests.RequestException as e: weather = f"[weather] request error : {e}"
+    if len(weather) < 18: # форматирование 
+      raznica = 18 - len(weather)
+      num_1 = raznica // 2 
+      num_2  = raznica - num_1
+      weather = (' ' * num_1) + weather + (' ' * num_2)
+
+  except requests.RequestException as e:
+     weather = "request error     "; 
+     print(f"[weather] request error : {e} \n")
+  except: weather  = "something error   "
+
+  weather = weather[:18]
+
 
 
 def disk_info():
+  #try:
     path = '/'
     usage = shutil_disk_usage(path) 
     gb = 2 ** 30 # байты в гигабайты
     disk_data['vsego'] = f"{usage.total / gb:.2f}"[:6]
     disk_data['zanyato'] = f"{usage.used / gb:.2f}"[:6]
-    disk_data['svobodno'] = f"{usage.free / gb:.2f}"[:6]
+    disk_data['svobodno'] = f"{usage.free / gb:.2f}"[:6] 
+    
+    for el in disk_data: # форматирование
+      if len(disk_data[el]) < 6: 
+        disk_data[el] = (' ' * (4-len(disk_data[el]))) + disk_data[el]
+            
+        if '.' not in disk_data[el] and len(disk_data[el]) < 5:
+            disk_data[el] =  disk_data[el] + '.' + ('0' * (6-len(disk_data[el])))
+        else: 
+            disk_data[el] =  ('0' * (6-len(disk_data[el]))) + disk_data[el] 
+      disk_data[el] = disk_data[el][:6]
 
-    if len(disk_data['vsego']) < 6: disk_data['vsego'] = ('0'*(6-len(disk_data['vsego'])))+disk_data['vsego']
-    if len(disk_data['zanyato']) < 6: disk_data['zanyato'] = ('0'*(6-len(disk_data['zanyato'])))+disk_data['zanyato']
-    if len(disk_data['svobodno']) < 6: disk_data['svobodno'] = ('0'*(6-len(disk_data['svobodno'])))+disk_data['svobodno']
 
-    if len(disk_data['vsego']) > 6: disk_data['vsego'] = disk_data['vsego'][:(6 - len(disk_data['vsego']))]
-    if len(disk_data['zanyato']) > 6: disk_data['zanyato'] = disk_data['zanyato'][:(6 - len(disk_data['zanyato']))]
-    if len(disk_data['svobodno']) > 6: disk_data['svobodno'] = disk_data['svobodno'][:(6 - len(disk_data['svobodno']))]
+    global disks_list, disk_name, disks_count
 
-    global disks_list, disk_name
-    disks_list = [f"{letter}:\\" for letter in string.ascii_uppercase if os_path.exists(f"{letter}:\\")]
+    partitions = psutil.disk_partitions()
+    for p in partitions: 
+       if p.fstype == 'NTFS': disks_list.append(p.device)
 
-    disk_name = subprocess_check_output("cmd /c echo %CD:~0,2%", text=True).strip()
+    disks_count = len(disks_list)
 
+    current_path = Path(__file__).resolve()
+    disk_name = current_path.anchor
+
+  #except: disks_count = 0
 
 def currency_rate():
+  try:
     url = 'https://www.cbr-xml-daily.ru/daily_json.js'
     response = requests.get(url)
     if response.status_code == 200:
@@ -102,34 +138,39 @@ def currency_rate():
             valutes['eur'] = str(data['Valute']["EUR"]['Value'])[0:5]
             valutes['usd'] = str(data['Valute']["USD"]['Value'])[0:5]
             valutes['cny'] = str(data['Valute']["CNY"]['Value'])[0:5]
-            return "yea"
-    else: return "Ошибка подключения к серверу"
+            return True
+    else: 
+       for valute in valutes: valutes[valute] = 'error'
+       return "Ошибка подключения к серверу"
+  except: 
+     for valute in valutes: valutes[valute] = 'ERROR'
+     return "Ошибка подключения к серверу"
+       
 
 def time_info():
     global time_now
     time_now = str(datetime.datetime.now())[:-7]
 
 def ping_info():
+  try:
     pingRequest = ping("8.8.8.8", count=1) # ICMP-запросы
     response = str(pingRequest.rtt_avg_ms)
-    if len(response) < 5: response = response + ("0"*(5 - len(response)))
+
+    if len(response) < 5: # форматирование 
+        if len(response) < 2:
+            response = '0'+ response + '.'+("0"*(5 - len(response)))
+        else: response = response + '.'+("0"*(5 - len(response)))
     if len(response) > 5: response = response[:(5 - len(response))]
-    global ping_now; ping_now = response
-
-
-# функция мониторинга интернет соеденения 
-# мониторинг задержки
-# мониторинг связи узлов
-# мониторинг места на диске
+    global ping_now; ping_now = response[:5]
+  except: ping_now = 'ERROR'
 
 
 def vew_table():
     # Код \033[K очищает строку от курсора до конца (чтобы не оставалось хвостов)
-    LINE_01   = f" /\_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ __\ \033[K"
-    LINE_02   = f"/ /\033[36m {time_now              } \033[0m/ EUR {valutes['eur']} /\033[35m Дисков: {len(disks_list)} шт.  Текущий: {disk_name} \033[0m/ \033[K"
+    LINE_01   = f" /\ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\ \033[K"
+    LINE_02   = f"/ /\033[36m {time_now              } \033[0m/ EUR {valutes['eur']} /\033[35m Дисков: {disks_count} шт. Текущий: {disk_name} \033[0m/ \033[K"
     LINE_03   = f" /\033[32m Задержка: {ping_now} ms  \033[0m/ USD {valutes['usd']} /\033[34m Места: {disk_data['svobodno']} из {disk_data['vsego']} GB \033[0m/ \033[K"
-    LINE_04   = f"/\033[33m IP:  {public_ip         }\033[0m/ CNY {valutes['cny']} /\033[36m Погода: {weather}  \033[0m  / \033[K"
-    # Выводим рамку
+    LINE_04   = f"/\033[33m IP: {public_ip         } \033[0m/ CNY {valutes['cny']} /\033[36m Погода: {weather} \033[0m/ \033[K"
     print(LINE_01)
     print(LINE_02)
     print(LINE_03)
@@ -171,6 +212,7 @@ def main():
     print(Fore.WHITE, ' _ _ sahur-system-[2] / '+ version + ' _ _ _ _ _ _ _ _ _ _ _ ', Fore.RESET) 
     while True:
       update_data_on_time()
+      #time.sleep(2)
       vew_table()
       time.sleep(1)
   except KeyboardInterrupt: return 0
