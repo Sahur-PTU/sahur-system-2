@@ -1,4 +1,4 @@
-# sahur-system-[2] / v-1.0 / 19.07.2026 - analytics 
+# sahur-system-[2] / v-1.2 / 24.11.2026 - analytics / anatoly and caktuz
 
 from os import system as os_system, path as os_path
 from sys import platform as sys_platform
@@ -10,7 +10,6 @@ import socket
 import requests
 import time
 import datetime
-import string
 import tkinter
 from colorama import init as colorama_init, Fore, Back, Style
 from pythonping import ping
@@ -204,12 +203,12 @@ def window():
     root.after(800, update_data)
 
   
-  def write():
-    with open('data/output.txt', 'w') as file:
+  def write(): # бурда просто типа писать в файл и читать из него
+    with open('output.txt', 'w') as file:
        file.write(entry.get())
   def read():
     try:
-      with open('data/output.txt', 'r') as file:
+      with open('output.txt', 'r') as file:
         r = tkinter.Label(root, text=file.read())
         r.place(x=10,y=120)
     except FileNotFoundError: print("файл не найден")
@@ -242,17 +241,17 @@ def window():
   label_CNY = tkinter.Label(root,text=f"CNY : {valutes['cny']}", width=12, height=1,font=("Arial", 9))
   label_CNY.place(x=250, y=171)
 
-  count_disk_tab = tkinter.Label(root, text=f" Дисков: {disks_count} шт") # ----------------------------- Диски
-  count_disk_tab.place(x=75, y=95)
-  vse = tkinter.Label(root, text=f"Текущий: {disk_name} ")
-  vse.place(x=160, y=95)
-  svo = tkinter.Label(root, text=f"Свободно: {disk_data['svobodno']} из {disk_data['vsego']} GB")
-  svo.place(x=75, y=120)
+  tab_DISKS_COUNT = tkinter.Label(root, text=f" Дисков: {disks_count} шт") # --------------------------- Диски
+  tab_DISKS_COUNT.place(x=75, y=95)
+  label_TEKUSHIY = tkinter.Label(root, text=f"Текущий: {disk_name} ")
+  label_TEKUSHIY.place(x=160, y=95)
+  label_SVO = tkinter.Label(root, text=f"Свободно: {disk_data['svobodno']} из {disk_data['vsego']} GB")
+  label_SVO.place(x=75, y=120)
 
-  label_weather = tkinter.Label(root, text="Погода") # ------------------------------------------------- Погода
-  label_weather.place(x=120, y=40)
-  label_weather = tkinter.Label(root, text=weather)
-  label_weather.place(x=120, y=65)
+  tab_WEATHER = tkinter.Label(root, text="Погода") # --------------------------------------------------- Погода
+  tab_WEATHER.place(x=120, y=40)
+  label_WEATHER = tkinter.Label(root, text=weather)
+  label_WEATHER.place(x=120, y=65)
 
 
   btn_1 = tkinter.Button(root, text='Чтение', command=read)
@@ -299,6 +298,6 @@ def main() :
 
         #t1.join()
 
-    except KeyboardInterrupt: return "exit"
+    except KeyboardInterrupt: return 1
 
 _main = main()
