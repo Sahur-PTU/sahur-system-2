@@ -1,11 +1,13 @@
-# sahur-system-[2] / v-1.2 / 24.11.2026 - analytics / anatoly and caktuz
+# sahur-system-[2] / v-1.2 / 25.11.2026 - analytics / anatoly and caktuz
 
 from os import system as os_system, path as os_path
 from sys import platform as sys_platform
-from subprocess import check_output
+from subprocess import check_output as sbprc_check_output
 from shutil import disk_usage as shutil_disk_usage
 from pathlib import Path
 import socket
+import json
+import urllib.request
 
 import psutil
 import requests
@@ -15,7 +17,7 @@ import time
 import datetime
 from colorama import init as colorama_init, Fore, Back, Style
 
-version = "v 1.2 / 20.11.2026"
+version = "v 1.2 / 25.11.2026"
 colorama_init()
 #os_system('mode con: cols=45 lines=6')
 
@@ -47,7 +49,7 @@ def ip_addresses():
       local_ip = socket.gethostbyname(hostname)
     except: local_ip = 'Ошибка при получении локального IP'
 
-    public_ip = '173.92.217.22'
+    ##public_ip = '173.92.217.22'
     if len(local_ip) < 15: # форматирование 
         local_ip = local_ip + (" " * (15 - len(local_ip)))
     if len(public_ip) < 15: 
@@ -63,24 +65,30 @@ def ip_addresses():
 def weather_info():
   try:
     global weather
-    params = {
-       "latitude": 55.7558,
-       "longitude": 37.6173,
-       "current": "temperature_2m,relative_humidity_2m,wind_speed_10m",
-       "timezone": "Europe/Moscow", 
-      }
-    
-    url = "https://wttr.in"
-    params = {"format": "j1", "lang": "ru"}
-    headers = {"User-Agent": "curl/8.0"}
+ 
+    # Определение координат по IP через ipwho.is (работает по HTTPS без ключа)
+    req_ip_crd = urllib.request.Request(f"https://ipinfo.io/{public_ip.strip()}/json",)
+    with urllib.request.urlopen(req_ip_crd, timeout=5) as resp:
+        geo_data = json.loads(resp.read().decode("utf-8").strip())
 
-    response = requests.get(url, params=params, timeout=5)
-    response.raise_for_status()
-    data = response.json()
+    x, y = geo_data['loc'].split(",")
+  
+    city = geo_data.get("city")
 
-    current = data["current_condition"][0]
-    weather = f"{current['temp_C'][:2]}°C  {current['humidity'][:2]}%  {str(int(current['windspeedKmph'])/3.6)[:3]}м/c"
+    # запрос по полученным координатам
+    weather_url = (
+      f"https://api.open-meteo.com/v1/forecast?"
+      f"latitude={x}&longitude={y}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
+    )
 
+    req_weather = urllib.request.Request(weather_url)
+    with urllib.request.urlopen(req_weather, timeout=5) as resp:
+        weather_data = json.loads(resp.read().decode("utf-8"))
+
+    current = weather_data["current"]
+
+    weather = f"{current['temperature_2m']}°C {current['relative_humidity_2m']}% {current["wind_speed_10m"]}м/с"
+      
     if len(weather) < 18: # форматирование 
       raznica = 18 - len(weather)
       num_1 = raznica // 2 
@@ -90,7 +98,7 @@ def weather_info():
   except requests.RequestException as e:
      weather = "request error     "; 
      #print(f"[weather] request error : {e} \n")
-  except: weather  = "something error   "
+  #except: weather  = "something error   "
 
   weather = weather[:18]
 
@@ -123,18 +131,16 @@ def disk_info():
        if p.fstype == 'NTFS': disks_plenty.append(p.device)
     disks_list = list(disks_plenty) # перезапись шобы не дублировались элементы
 
-    """if sys_platform == "win32":
+    """if sys_platform == "win32": # это типа имена накопителей получать 
         cmd = ["powershell","-NoProfile","-Command","Get-PhysicalDisk | Select-Object -ExpandProperty FriendlyName",]
-        output = check_output(cmd, text=True).strip()
+        output = check_output(cmd, text=True).strip() 
         disks_list = [line.strip() for line in output.splitlines() if line.strip()]"""
 
     if sys_platform.startswith("linux"):
         # lsblk -d выводит только сами устройства (без разделов sda1, sda2 и т.д.)
-        # -n убирает заголовки, -o NAME,TYPE выводит имя и тип
-        cmd = ["lsblk", "-d", "-n", "-o", "NAME,TYPE"]
-        output = check_output(cmd, text=True).strip()
-        # Фильтруем только тип 'disk' (отсекаем loop-устройства и CD-ROM)
-        disks_list = [
+        cmd = ["lsblk", "-d", "-n", "-o", "NAME,TYPE"]  # -n убирает заголовки, -o NAME,TYPE выводит имя и тип
+        output = sbprc_check_output(cmd, text=True).strip()
+        disks_list = [ # Фильтрация. только тип 'disk' (отсекает loop-устройства и CD-ROM)
             line.split()[0]
             for line in output.splitlines()
             if line.endswith("disk")
@@ -146,13 +152,7 @@ def disk_info():
     disk_name = current_path.anchor
 
     if len(disk_name) < 3:
-       disk_name = disk_name + (" " * (3-len(disk_name))) 
-
-    print(disks_list)
-
-    disk_name = disk_name[:3]
-
-    
+       disk_name = disk_name + (" " * (3-len(disk_name)))[:3]
 
   #except: disks_count = 0
 
