@@ -2,6 +2,7 @@
 
 from os import system as os_system, path as os_path
 from sys import platform as sys_platform
+from subprocess import check_output
 from shutil import disk_usage as shutil_disk_usage
 from pathlib import Path
 import socket
@@ -73,7 +74,7 @@ def weather_info():
     params = {"format": "j1", "lang": "ru"}
     headers = {"User-Agent": "curl/8.0"}
 
-    response = requests.get(url, params=params, timeout=10)
+    response = requests.get(url, params=params, timeout=5)
     response.raise_for_status()
     data = response.json()
 
@@ -122,10 +123,36 @@ def disk_info():
        if p.fstype == 'NTFS': disks_plenty.append(p.device)
     disks_list = list(disks_plenty) # перезапись шобы не дублировались элементы
 
+    """if sys_platform == "win32":
+        cmd = ["powershell","-NoProfile","-Command","Get-PhysicalDisk | Select-Object -ExpandProperty FriendlyName",]
+        output = check_output(cmd, text=True).strip()
+        disks_list = [line.strip() for line in output.splitlines() if line.strip()]"""
+
+    if sys_platform.startswith("linux"):
+        # lsblk -d выводит только сами устройства (без разделов sda1, sda2 и т.д.)
+        # -n убирает заголовки, -o NAME,TYPE выводит имя и тип
+        cmd = ["lsblk", "-d", "-n", "-o", "NAME,TYPE"]
+        output = check_output(cmd, text=True).strip()
+        # Фильтруем только тип 'disk' (отсекаем loop-устройства и CD-ROM)
+        disks_list = [
+            line.split()[0]
+            for line in output.splitlines()
+            if line.endswith("disk")
+        ]
+
     disks_count = len(disks_list)
     
     current_path = Path(__file__).resolve()
     disk_name = current_path.anchor
+
+    if len(disk_name) < 3:
+       disk_name = disk_name + (" " * (3-len(disk_name))) 
+
+    print(disks_list)
+
+    disk_name = disk_name[:3]
+
+    
 
   #except: disks_count = 0
 
