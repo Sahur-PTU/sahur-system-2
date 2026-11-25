@@ -6,16 +6,15 @@ from subprocess import check_output as sbprc_check_output
 from shutil import disk_usage as shutil_disk_usage
 from pathlib import Path
 import socket
-import json
-import urllib.request
 
 import psutil
 import requests
 from icmplib import ping
+from colorama import init as colorama_init, Fore, Back, Style
 
 import time
 import datetime
-from colorama import init as colorama_init, Fore, Back, Style
+
 
 version = "v 1.2 / 25.11.2026"
 colorama_init()
@@ -64,15 +63,13 @@ def ip_addresses():
 
 def weather_info():
   try:
-    global weather
+    global weather, public_ip
  
     # Определение координат по IP через ipwho.is (работает по HTTPS без ключа)
-    req_ip_crd = urllib.request.Request(f"https://ipinfo.io/{public_ip.strip()}/json",)
-    with urllib.request.urlopen(req_ip_crd, timeout=5) as resp:
-        geo_data = json.loads(resp.read().decode("utf-8").strip())
+    req_ip_crd = requests.get(f"https://ipinfo.io/{public_ip.strip()}/json", timeout=5) # запрашиваем геоданные
+    geo_data = req_ip_crd.json()
 
     x, y = geo_data['loc'].split(",")
-  
     city = geo_data.get("city")
 
     # запрос по полученным координатам
@@ -81,13 +78,11 @@ def weather_info():
       f"latitude={x}&longitude={y}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
     )
 
-    req_weather = urllib.request.Request(weather_url)
-    with urllib.request.urlopen(req_weather, timeout=5) as resp:
-        weather_data = json.loads(resp.read().decode("utf-8"))
+    req_weather = requests.get(weather_url, timeout=5) # запрашиваем погоду
+    weather_data = req_weather.json()
 
     current = weather_data["current"]
-
-    weather = f"{current['temperature_2m']}°C {current['relative_humidity_2m']}% {current["wind_speed_10m"]}м/с"
+    weather = f"{current['temperature_2m']}°C {current['relative_humidity_2m']}% {str(current["wind_speed_10m"]/3.6)[:3]}м/с"
       
     if len(weather) < 18: # форматирование 
       raznica = 18 - len(weather)
