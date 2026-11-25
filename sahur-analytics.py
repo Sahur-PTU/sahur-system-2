@@ -1,18 +1,18 @@
-# sahur-system-[2] / v-1.2 / 20.11.2026 - analytics / anatoly and caktuz
+# sahur-system-[2] / v-1.2 / 24.11.2026 - analytics / anatoly and caktuz
 
 from os import system as os_system, path as os_path
 from sys import platform as sys_platform
-from subprocess import check_output as subprocess_check_output
 from shutil import disk_usage as shutil_disk_usage
 from pathlib import Path
-import psutil
 import socket
+
+import psutil
 import requests
+from icmplib import ping
+
 import time
 import datetime
-import string
 from colorama import init as colorama_init, Fore, Back, Style
-from pythonping import ping
 
 version = "v 1.2 / 20.11.2026"
 colorama_init()
@@ -51,9 +51,9 @@ def ip_addresses():
         local_ip = local_ip + (" " * (15 - len(local_ip)))
     if len(public_ip) < 15: 
         public_ip = public_ip + (" " * (15 - len(public_ip)))
+
     local_ip = local_ip[:15]
     public_ip = public_ip[:15]
-
   except: 
     public_ip = 'RROR ERROR ERRO'
     return False
@@ -94,7 +94,6 @@ def weather_info():
   weather = weather[:18]
 
 
-
 def disk_info():
   #try:
     path = '/'
@@ -117,12 +116,14 @@ def disk_info():
 
     global disks_list, disk_name, disks_count
 
+    disks_plenty = []
     partitions = psutil.disk_partitions()
     for p in partitions: 
-       if p.fstype == 'NTFS': disks_list.append(p.device)
+       if p.fstype == 'NTFS': disks_plenty.append(p.device)
+    disks_list = list(disks_plenty) # перезапись шобы не дублировались элементы
 
     disks_count = len(disks_list)
-
+    
     current_path = Path(__file__).resolve()
     disk_name = current_path.anchor
 
@@ -153,17 +154,22 @@ def time_info():
 
 def ping_info():
   try:
-    pingRequest = ping("8.8.8.8", count=1) # ICMP-запросы
-    response = str(pingRequest.rtt_avg_ms)
- 
+   # privileged=False позволяет запускать без прав root/администратора
+    response = ping("8.8.8.8", count=2, interval=0.2, timeout=3, privileged=False) # ICMP-запросы
+    
+    if response.is_alive:
+       response = str(response.avg_rtt)[:5]
+    else: response = "ERROR"
+
     if len(response) < 5: # форматирование 
-      if len(response) < 2: 
-          response = '0'+ response
-      if '.' not in response:
-          response = response + '.' + ("0" * (5 - len(response)))
-      else: response = response + ("0" * (5 - len(response)))
+        if len(response) < 2: 
+            response = '0'+ response
+        if '.' not in response:
+            response = response + '.' + ("0" * (5 - len(response)))
+        else: response = response + ("0" * (5 - len(response)))
 
     global ping_now; ping_now = response[:5]
+
   except: ping_now = 'ERROR'
 
 
@@ -211,13 +217,13 @@ def main():
   try:
     os_system(clearOutput)
     setup_data()
-    print(Fore.WHITE, ' _ _ sahur-system-[2] / '+ version + ' _ _ _ _ _ _ _ _ _ _ _ ', Fore.RESET) 
+    print(Fore.WHITE, ' _ _ sahur-system-[2] / '+ version +' _ _ _ _ _ _ _ _ _ _ _ ', Fore.RESET) 
     while True:
       update_data_on_time()
       #time.sleep(2)
       vew_table()
       time.sleep(1)
-  except KeyboardInterrupt: return 0
+  except KeyboardInterrupt: return 1
 
 if __name__ == "__main__":
    main()
