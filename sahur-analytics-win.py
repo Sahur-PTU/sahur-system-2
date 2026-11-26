@@ -36,6 +36,7 @@ city = "none"
 disk_data = {'vsego':'none','zanyato':'none','svobodno':'none'}
 disk_name = "/"
 disks_list = []
+disks_names_list = []
 disks_count = 0
 
 
@@ -120,7 +121,7 @@ def disk_info():
       disk_data[el] = disk_data[el][:6]
 
 
-    global disks_list, disk_name, disks_count
+    global disks_list, disks_names_list, disk_name, disks_count
 
     disks_plenty = []
     partitions = psutil.disk_partitions()
@@ -128,20 +129,16 @@ def disk_info():
        if p.fstype == 'NTFS': disks_plenty.append(p.device)
     disks_list = list(disks_plenty) # перезапись шобы не дублировались элементы
 
-    """if sys_platform == "win32": # это типа имена накопителей получать 
+    if sys_platform == "win32": # это типа имена накопителей получать 
         cmd = ["powershell","-NoProfile","-Command","Get-PhysicalDisk | Select-Object -ExpandProperty FriendlyName",]
-        output = check_output(cmd, text=True).strip() 
-        disks_list = [line.strip() for line in output.splitlines() if line.strip()]"""
+        output = sbprc_check_output(cmd, text=True).strip() 
+        disks_names_list = list(set([line.strip() for line in output.splitlines() if line.strip()]))
 
     if sys_platform.startswith("linux"):
         # lsblk -d выводит только сами устройства (без разделов sda1, sda2 и т.д.)
         cmd = ["lsblk", "-d", "-n", "-o", "NAME,TYPE"]  # -n убирает заголовки, -o NAME,TYPE выводит имя и тип
         output = sbprc_check_output(cmd, text=True).strip()
-        disks_list = [ # Фильтрация. только тип 'disk' (отсекает loop-устройства и CD-ROM)
-            line.split()[0]
-            for line in output.splitlines()
-            if line.endswith("disk")
-        ]
+        disks_list = [line.split()[0] for line in output.splitlines() if line.endswith("disk")] # Фильтрация. только тип 'disk' (отсекает loop-устройства и CD-ROM)
 
     disks_count = len(disks_list)
     
@@ -267,10 +264,10 @@ def window():
   label_PING.place(x=250, y=95)
 
   
-  label_LOCAL_IP = tkinter.Label(root, text="L IP: "+local_ip, width=15) # ----------------------------- Айпишки
-  label_LOCAL_IP.place(x=230, y=40)
-  label_PUBLIC_IP = tkinter.Label(root, text="P IP: "+public_ip, width=15)
-  label_PUBLIC_IP.place(x=230, y=65)
+  label_LOCAL_IP = tkinter.Label(root, text="L IP: "+local_ip, width=16) # ----------------------------- Айпишки
+  label_LOCAL_IP.place(x=223, y=40)
+  label_PUBLIC_IP = tkinter.Label(root, text="P IP: "+public_ip, width=16)
+  label_PUBLIC_IP.place(x=223, y=65)
 
   label_EUR = tkinter.Label(root,text=f"EUR : {valutes['eur']}", width=12, height=1,font=("Arial", 9)) # Валюты
   label_EUR.place(x=250, y=125)
@@ -286,12 +283,12 @@ def window():
   label_SVO = tkinter.Label(root, text=f" Свободно: {disk_data['svobodno']} из {disk_data['vsego']} GB", width=25)
   label_SVO.place(x=63, y=171)
 
-  tab_WEATHER = tkinter.Label(root, text="Погода", width=7, font=("Arial", 10)) # --------------------------------------------------- Погода
-  tab_WEATHER.place(x=87, y=40)
+  tab_WEATHER = tkinter.Label(root, text="Погода", width=7, font=("Arial", 10)) # ---------------------- Погода
+  tab_WEATHER.place(x=80, y=40)
   tab_CITY  = tkinter.Label(root, text=' '+city, width=8, font=("Arial", 10))
-  tab_CITY.place(x=151, y=40)
+  tab_CITY.place(x=144, y=40)
   label_WEATHER = tkinter.Label(root, text=weather, width=16, font=("Arial", 10))
-  label_WEATHER.place(x=87, y=64)
+  label_WEATHER.place(x=80, y=64)
 
 
   btn_exit = tkinter.Button(root, text='Выйти', command=root.destroy, width=6)
