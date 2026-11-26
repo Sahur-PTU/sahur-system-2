@@ -48,7 +48,7 @@ def ip_addresses():
       local_ip = socket.gethostbyname(hostname)
     except: local_ip = 'Ошибка при получении локального IP'
 
-    ##public_ip = '173.92.217.22'
+    public_ip = '173.92.217.22'
     if len(local_ip) < 15: # форматирование 
         local_ip = local_ip + (" " * (15 - len(local_ip)))
     if len(public_ip) < 15: 
