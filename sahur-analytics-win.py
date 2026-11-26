@@ -32,6 +32,7 @@ local_ip = "none"
 datetime_now = "none"
 valutes = {'eur':'none', 'usd':'none', 'cny':'none'}
 weather = "none"
+city = "none"
 disk_data = {'vsego':'none','zanyato':'none','svobodno':'none'}
 disk_name = "/"
 disks_list = []
@@ -64,14 +65,14 @@ def ip_addresses():
 
 def weather_info():
   try:
-    global weather, public_ip
+    global weather, public_ip, city
  
     # Определение координат по IP через ipwho.is (работает по HTTPS без ключа)
     req_ip_crd = requests.get(f"https://ipinfo.io/{public_ip.strip()}/json", timeout=5) # запрашиваем геоданные
     geo_data = req_ip_crd.json()
 
     x, y = geo_data['loc'].split(",")
-    city = geo_data.get("city")
+    city = geo_data.get("city")[:10]
 
     # запрос по полученным координатам
     weather_url = (
@@ -234,7 +235,7 @@ def window():
     update_data_on_time() # обновляем данные
     # обновляем текст в метках
     label_TIME.config(text=time_now)
-    label_PING.config(text=f"ping : {ping_now} ms ")
+    label_PING.config(text=f" ping : {ping_now} ms ")
 
     # Планируем следующий вызов этой же функции через 800 мс
     root.after(800, update_data)
@@ -262,14 +263,14 @@ def window():
   label_TIME = tkinter.Label(root, text=time_now,width=18, height=1, font=("Arial", 9)) # -------------- Время
   label_TIME.place(x=210, y=10)
 
-  label_PING = tkinter.Label(root, text=f"ping : {ping_now} ms ") # ------------------------------------ Пинг
+  label_PING = tkinter.Label(root, text=f" ping : {ping_now} ms ") # ----------------------------------- Пинг
   label_PING.place(x=250, y=95)
 
   
-  label_LOCAL_IP = tkinter.Label(root, text="L IP: "+local_ip) # --------------------------------------- Айпишки
-  label_LOCAL_IP.place(x=232, y=40)
-  label_PUBLIC_IP = tkinter.Label(root, text="P IP: "+public_ip)
-  label_PUBLIC_IP.place(x=232, y=65)
+  label_LOCAL_IP = tkinter.Label(root, text="L IP: "+local_ip, width=15) # ----------------------------- Айпишки
+  label_LOCAL_IP.place(x=230, y=40)
+  label_PUBLIC_IP = tkinter.Label(root, text="P IP: "+public_ip, width=15)
+  label_PUBLIC_IP.place(x=230, y=65)
 
   label_EUR = tkinter.Label(root,text=f"EUR : {valutes['eur']}", width=12, height=1,font=("Arial", 9)) # Валюты
   label_EUR.place(x=250, y=125)
@@ -278,28 +279,30 @@ def window():
   label_CNY = tkinter.Label(root,text=f"CNY : {valutes['cny']}", width=12, height=1,font=("Arial", 9))
   label_CNY.place(x=250, y=171)
 
-  tab_DISKS_COUNT = tkinter.Label(root, text=f" Дисков: {disks_count} шт") # --------------------------- Диски
-  tab_DISKS_COUNT.place(x=75, y=95)
-  label_TEKUSHIY = tkinter.Label(root, text=f"Текущий: {disk_name} ")
-  label_TEKUSHIY.place(x=160, y=95)
-  label_SVO = tkinter.Label(root, text=f"Свободно: {disk_data['svobodno']} из {disk_data['vsego']} GB")
-  label_SVO.place(x=75, y=120)
+  tab_DISKS_COUNT = tkinter.Label(root, text=f" Дисков: {disks_count} шт", width=12) # ----------------- Диски
+  tab_DISKS_COUNT.place(x=63, y=146)
+  label_TEKUSHIY = tkinter.Label(root, text=f" Текущий: {disk_name} ", width=11)
+  label_TEKUSHIY.place(x=161, y=146)
+  label_SVO = tkinter.Label(root, text=f" Свободно: {disk_data['svobodno']} из {disk_data['vsego']} GB", width=25)
+  label_SVO.place(x=63, y=171)
 
-  tab_WEATHER = tkinter.Label(root, text="Погода") # --------------------------------------------------- Погода
-  tab_WEATHER.place(x=120, y=40)
-  label_WEATHER = tkinter.Label(root, text=weather)
-  label_WEATHER.place(x=120, y=65)
+  tab_WEATHER = tkinter.Label(root, text="Погода", width=7, font=("Arial", 10)) # --------------------------------------------------- Погода
+  tab_WEATHER.place(x=87, y=40)
+  tab_CITY  = tkinter.Label(root, text=' '+city, width=8, font=("Arial", 10))
+  tab_CITY.place(x=151, y=40)
+  label_WEATHER = tkinter.Label(root, text=weather, width=16, font=("Arial", 10))
+  label_WEATHER.place(x=87, y=64)
 
 
-  btn_1 = tkinter.Button(root, text='Чтение', command=read)
-  btn_1.place(x=10, y=40)
-  btn_1 = tkinter.Button(root, text='Выйти', command=root.destroy)
-  btn_1.place(x=10, y=10)
+  btn_exit = tkinter.Button(root, text='Выйти', command=root.destroy, width=6)
+  btn_exit.place(x=10, y=10)
+  btn_read = tkinter.Button(root, text='Чтение', command=read, width=6)
+  btn_read.place(x=10, y=40)
 
-  entry = tkinter.Entry(root, width=15)
+  entry = tkinter.Entry(root, width=6)
   entry.place(x=10, y=145)
-  button = tkinter.Button(root, text="запись",width=12, command=write)
-  button.place(x=10, y=165)
+  button_write = tkinter.Button(root, text="запись", command=write, width=5, height=1)
+  button_write.place(x=10, y=165)
 
   root.mainloop()
 
